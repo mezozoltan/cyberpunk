@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Cyberpunk RTX Viewer</title>
+    <link rel="icon" type="image/png" href="./favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg" />
+    <link rel="shortcut icon" href="./favicon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="./favicon/site.webmanifest" />
+    <style>
+      :root {
+        --divider-width: 3px;
+        --ui-bg: rgba(0, 0, 0, 0.5);
+        --ui-text: #fff;
+        --accent: #5cf6ff;
+      }
+
+      html,
+      body {
+        cursor: url("./cursor/cursor.png") 0 0, auto;
+        user-select: none;
+        height: 100%;
+        margin: 0;
+        background: #000;
+        color: #fff;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+          Cantarell, "Helvetica Neue", Arial, "Noto Sans";
+        overflow: hidden;
+      }
+
+      a,
+      button {
+        color: inherit;
+      }
+
+      .splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #000;
+        overflow: hidden;
+      }
+
+      .splash.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .splash video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .splash .overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .splash .cta {
+        position: absolute;
+        left: 50%;
+        bottom: 12vh;
+        transform: translateX(-50%);
+        height: 84px;
+        appearance: none;
+        border: none;
+        background: transparent;
+        display: grid;
+        place-items: center;
+        pointer-events: auto;
+        cursor: url("./cursor/cursor_grab.png") 0 0, auto;
+      }
+
+      .splash .cta svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .gallery-container {
+        position: absolute;
+        background-image: url(./gallery/Gallery.webp);
+        background-size: 100%;
+        background-position: center;
+        width: 100%;
+        height: 100%;
+        justify-content: center;
+        align-items: center;
+        display: flex;
+      }
+
+      .gallery {
+        width: 110vh;
+        height: 74vh;
+        display: grid;
+        gap: 1vh;
+        grid-template-columns: repeat(3, minmax(200px, 1fr));
+        grid-template-rows: max-content;
+        overflow-y: scroll;
+        overflow-x: hidden;
+      }
+
+      @media (max-width: 1100px) {
+        .gallery {
+          grid-template-columns: repeat(3, minmax(160px, 1fr));
+        }
+      }
+
+      @media (max-width: 800px) {
+        .gallery {
+          grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+      }
+
+      @media (max-width: 520px) {
+        .gallery {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .thumb {
+        position: relative;
+        border-radius: 0;
+        overflow: visible;
+        background: transparent;
+        padding: 2vh;
+        width: 32vh;
+        aspect-ratio: 16 / 9;
+        display: flex;
+        justify-content: center;
+
+        background-image: url("./gallery/gallery_background.svg");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        cursor: url("./cursor/cursor_grab.png") 0 0, auto;
+      }
+
+      .thumb:hover {
+        background-image: url("./gallery/gallery_background_hovered.svg");
+      }
+
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+
+        -webkit-mask-image: url("./gallery/gallery_image_mask.svg");
+        mask-image: url("./gallery/gallery_image_mask.svg");
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+      }
+
+      .viewer {
+        position: fixed;
+        inset: 0;
+        display: none;
+        background: #111;
+        touch-action: none;
+        z-index: 3;
+      }
+
+      .viewer.show {
+        display: block;
+      }
+
+      .stage {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      .image {
+        position: absolute;
+        inset: 0;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        will-change: clip-path, background-image, transform, opacity;
+      }
+
+      .image.top {
+        clip-path: inset(0 0 0 50%);
+      }
+
+      .divider {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: var(--divider-width);
+        background: var(--accent);
+        transform: translateX(-50%);
+        pointer-events: none;
+      }
+
+      .music {
+        position: absolute;
+        bottom: 6.4vh;
+        left: 19vh;
+        height: 2vh;
+      }
+
+      #cursor {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 28px;
+        height: 28px;
+        transform: translate(-9999px, -9999px);
+        pointer-events: none;
+        z-index: 150000;
+        will-change: transform;
+      }
+
+      .cursor-shadow {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 48px;
+        height: 48px;
+        transform: translate(-9999px, -9999px);
+        pointer-events: none;
+        will-change: transform, filter, opacity;
+        z-index: 1;
+      }
+
+      .cursor-shadow svg {
+        filter: blur(1.5px);
+      }
+
+      @media (pointer: coarse) {
+        body { cursor: auto; }
+        #cursor, .cursor-shadow { display: none; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #cursor, .cursor-shadow { transition: none; }
+      }
+
+      .gallery-wrap {
+        position: relative;
+        width: 110vh;
+        height: 74vh;
+        margin-bottom: 1vh;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0;
+        z-index: 2;
+      }
+
+      .gallery-wrap .gallery {
+        scrollbar-width: none;
+      }
+
+      .gallery-wrap .gallery::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+      }
+
+      .custom-scrollbar {
+        width: 12px;
+        display: flex;
+        align-items: stretch;
+        right: -114px;
+        position: relative;
+        cursor: url("./cursor/cursor_grab.png") 0 0, auto;
+      }
+
+      .scrollbar-track {
+        position: relative;
+        flex: 1;
+        background: #361116;
+        margin: 4px;
+      }
+
+      .scrollbar-track::before {
+        content: "";
+        position: absolute;
+        inset: -6px;
+      }
+
+      .scrollbar-thumb {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 40px;
+        background: #CD403D;
+        cursor: url("./cursor/cursor_grab.png") 0 0, auto;
+
+        box-shadow: 8px 0px 1px #CD403D29, 16px 0px 5px #CD403D29;
+        transition: background 140ms ease, box-shadow 140ms ease;
+      }
+
+      .custom-scrollbar .scrollbar-track:hover .scrollbar-thumb {
+        background: #5cf6ff;
+        box-shadow: 8px 0px 1px #5cf6ff29, 16px 0px 5px #5cf6ff29;
+      }
+
+      .scrollbar-thumb:hover {
+        background: #5cf6ff;
+        box-shadow: 8px 0px 1px #5cf6ff29, 16px 0px 5px #5cf6ff29;
+      }
+
+      .scrollbar-thumb.dragging {
+        cursor: url("./cursor/cursor_grab.png") 0 0, auto;
+        background: #5cf6ff;
+        box-shadow: 8px 0px 1px #5cf6ff29, 16px 0px 5px #5cf6ff29;
+      }
+
+      @media (max-width: 1100px) {
+        .gallery-wrap {
+          width: 110vh;
+          height: 74vh;
+        }
+      }
+
+      .menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 14.4px;
+      }
+
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10.8px;
+        width: 414px;
+        height: 52.8px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        cursor: url("./cursor/cursor_grab.png") 0 0, auto;
+      }
+
+      .box {
+        width: 28.8px;
+        height: 28.8px;
+        margin-left: 14.4px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+
+      .feature {
+        height: 20.4px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+
+      .feature-1 {
+        width: 120.6px;
+      }
+      .feature-2 {
+        width: 105px;
+      }
+      .feature-3 {
+        width: 114px;
+      }
+
+      .side-indicator {
+        display: flex;
+        align-items: center;
+        width: 414px;
+        height: 34.2px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        margin-bottom: 5px;
+      }
+
+      .left-side {
+        background-image: url("./graphics_menu/left.svg");
+      }
+
+      .right-side {
+        background-image: url("./graphics_menu/right.svg");
+      }
+
+      #controls {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        z-index: 3;
+      }
+
+      .keys {
+        position: absolute;
+        right: 78px;
+        bottom: 27px;
+        z-index: 3;
+        width: 535px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="splash" id="splash">
+      <video
+        id="splashVideo"
+        autoplay
+        muted
+        playsinline
+        loop
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="./splash/Cyberpunk.mp4" type="video/mp4" />
+      </video>
+      <div class="overlay">
+        <button class="cta" id="splashBtn" aria-label="Enter">
+          <svg
+            id="svgDefault"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 613 118"
+          >
+            <path d="M1 22h611v95H1z" style="fill:#161017;opacity:.59" />
+            <path
+              d="M39.863 87.955V74.749a.522.522 0 0 1 .62-.558h10.23a9.049 9.049 0 0 0 6.7-2.418 9.136 9.136 0 0 0 2.418-6.758v-6.882a9.159 9.159 0 0 0-2.418-6.727 8.985 8.985 0 0 0-6.7-2.449H36.2a.767.767 0 0 0-.868.868v38.13a.767.767 0 0 0 .868.868h2.79a.767.767 0 0 0 .868-.868Zm0-18.352v-16.12a.522.522 0 0 1 .62-.558h9.61q5.208 0 5.208 5.394v6.51q0 5.333-5.208 5.332h-9.61a.522.522 0 0 1-.62-.558Zm31.372 18.352V73.509a.522.522 0 0 1 .62-.558h8.184l6.944 15a1.658 1.658 0 0 0 1.55.868h2.79q1.177 0 .62-.992l-7.192-15.062v-.248A7.974 7.974 0 0 0 89.4 69.51a9.385 9.385 0 0 0 1.674-5.735v-5.642a9.029 9.029 0 0 0-2.48-6.727 9.2 9.2 0 0 0-6.758-2.449H67.577a.767.767 0 0 0-.868.868v38.13a.767.767 0 0 0 .868.868h2.79a.767.767 0 0 0 .868-.868Zm0-19.344V53.483a.522.522 0 0 1 .62-.558h9.362q5.332 0 5.332 5.394v5.518q0 5.333-5.332 5.332h-9.362a.522.522 0 0 1-.62-.558Zm48.733 19.344v-2.232a.768.768 0 0 0-.868-.868h-15.19a.522.522 0 0 1-.62-.558V71.091a.522.522 0 0 1 .62-.558h13.268a.767.767 0 0 0 .868-.868v-2.232a.768.768 0 0 0-.868-.868h-13.269a.522.522 0 0 1-.62-.558V53.483a.522.522 0 0 1 .62-.558H119.1a.767.767 0 0 0 .868-.868v-2.232a.768.768 0 0 0-.868-.868H99.631a.767.767 0 0 0-.868.868v38.13a.767.767 0 0 0 .868.868H119.1a.767.767 0 0 0 .868-.868Zm9.362-1.581a9.106 9.106 0 0 0 6.7 2.449h7.129a8.511 8.511 0 0 0 9.177-9.176v-2.79a9.221 9.221 0 0 0-1.147-4.743 7.407 7.407 0 0 0-3.007-2.914 22.575 22.575 0 0 0-4.123-1.612 45.836 45.836 0 0 0-4.5-1.054q-2.232-.4-4.092-.9-4.155-1.177-4.154-4.34v-2.48q0-5.89 5.517-5.89h5.27q5.518 0 5.519 5.642v1.116a.772.772 0 0 0 .805.93h2.853a.773.773 0 0 0 .806-.93v-1.55a8.511 8.511 0 0 0-9.176-9.176h-6.882a8.471 8.471 0 0 0-9.176 9.176v3.038a7.848 7.848 0 0 0 2.17 5.859 11 11 0 0 0 5.27 2.883q3.1.744 6.2 1.3 7.377 1.365 7.378 5.828v2.108q0 5.7-5.518 5.7h-5.456q-5.52 0-5.518-5.58v-1.605a.768.768 0 0 0-.868-.868h-2.79a.767.767 0 0 0-.868.868v1.984a9.023 9.023 0 0 0 2.48 6.727Zm33.17 0a9.105 9.105 0 0 0 6.695 2.449h7.131a8.511 8.511 0 0 0 9.176-9.176v-2.79a9.221 9.221 0 0 0-1.147-4.743 7.419 7.419 0 0 0-3.007-2.914 22.575 22.575 0 0 0-4.123-1.612 45.769 45.769 0 0 0-4.495-1.054q-2.232-.4-4.092-.9-4.155-1.177-4.154-4.34v-2.48q0-5.89 5.518-5.89h5.27q5.517 0 5.517 5.642v1.116a.772.772 0 0 0 .807.93h2.852a.773.773 0 0 0 .806-.93v-1.55a8.511 8.511 0 0 0-9.176-9.176h-6.883a8.472 8.472 0 0 0-9.176 9.176v3.038a7.848 7.848 0 0 0 2.171 5.859 11 11 0 0 0 5.27 2.883q3.1.744 6.2 1.3 7.377 1.365 7.378 5.828v2.108q0 5.7-5.519 5.7h-5.455q-5.52 0-5.518-5.58v-1.605a.768.768 0 0 0-.868-.868h-2.79a.767.767 0 0 0-.869.868v1.984a9.023 9.023 0 0 0 2.481 6.727Zm125.054 1.581V53.483a.522.522 0 0 1 .62-.558h8.432a.8.8 0 0 0 .93-.868v-2.232a.8.8 0 0 0-.93-.868h-22.63a.8.8 0 0 0-.93.868v2.232a.8.8 0 0 0 .93.868h8.432a.523.523 0 0 1 .62.558v34.472a.766.766 0 0 0 .867.868h2.791a.767.767 0 0 0 .868-.868Zm18.538-8.494V58.319q0-5.394 5.146-5.394h6.324q5.208 0 5.208 5.394v21.142q0 5.394-5.208 5.394h-6.324q-5.148 0-5.146-5.394Zm18.755 6.913a9.093 9.093 0 0 0 2.449-6.727V58.133a8.471 8.471 0 0 0-9.176-9.176h-7.378a9.156 9.156 0 0 0-6.727 2.418 9.064 9.064 0 0 0-2.449 6.758v21.514a9.063 9.063 0 0 0 2.449 6.758 9.157 9.157 0 0 0 6.727 2.418h7.378a9.09 9.09 0 0 0 6.726-2.449Zm48.853.026a9.07 9.07 0 0 0 2.448-6.758v-3.033a.767.767 0 0 0-.867-.868h-2.79a.767.767 0 0 0-.868.868v2.852q0 5.394-5.208 5.394h-6.386q-5.148 0-5.146-5.394V58.319q0-5.394 5.146-5.394h6.386q5.208 0 5.208 5.394v2.852a.766.766 0 0 0 .868.868h2.79a.766.766 0 0 0 .867-.868v-3.038a8.431 8.431 0 0 0-9.176-9.176h-7.439a9.156 9.156 0 0 0-6.727 2.418 9.064 9.064 0 0 0-2.449 6.758v21.514a9.063 9.063 0 0 0 2.449 6.758 9.157 9.157 0 0 0 6.727 2.418h7.439A9.162 9.162 0 0 0 373.7 86.4Zm12.244-6.944V58.319q0-5.394 5.147-5.394h6.324q5.208 0 5.208 5.394v21.142q0 5.394-5.208 5.394h-6.324q-5.148 0-5.147-5.394Zm18.756 6.918a9.092 9.092 0 0 0 2.448-6.727V58.133a8.47 8.47 0 0 0-9.176-9.176H390.6a8.433 8.433 0 0 0-9.177 9.176v21.514a9.063 9.063 0 0 0 2.45 6.758 9.155 9.155 0 0 0 6.727 2.418h7.377a9.092 9.092 0 0 0 6.723-2.449Zm14.849 1.581v-29.7h.251l17.051 29.76a1.7 1.7 0 0 0 1.3.806h2.294a.767.767 0 0 0 .868-.868V49.825a.768.768 0 0 0-.868-.868h-2.728a.767.767 0 0 0-.868.868v29.7h-.249l-17.112-30.07a1 1 0 0 0-.992-.5h-2.542a.767.767 0 0 0-.868.868v38.13a.766.766 0 0 0 .868.868h2.728a.767.767 0 0 0 .868-.868Zm40.92 0V53.483a.522.522 0 0 1 .62-.558h8.432a.8.8 0 0 0 .93-.868v-2.232a.8.8 0 0 0-.93-.868h-22.629a.8.8 0 0 0-.929.868v2.232a.8.8 0 0 0 .929.868h8.432a.523.523 0 0 1 .621.558v34.472a.766.766 0 0 0 .868.868h2.79a.767.767 0 0 0 .868-.868Zm19.839-39h-2.789a.767.767 0 0 0-.868.868v38.13a.766.766 0 0 0 .868.868h2.789a.767.767 0 0 0 .869-.868V49.825a.768.768 0 0 0-.869-.868Zm14.2 39v-29.7h.247l17.051 29.76a1.7 1.7 0 0 0 1.3.806h2.294a.767.767 0 0 0 .868-.868V49.825a.768.768 0 0 0-.868-.868h-2.729a.767.767 0 0 0-.867.868v29.7h-.248l-17.113-30.07a1 1 0 0 0-.991-.5h-2.542a.767.767 0 0 0-.868.868v38.13a.766.766 0 0 0 .868.868h2.728a.767.767 0 0 0 .868-.868Zm50.716-38.13v29.636q0 5.394-5.208 5.394h-5.828q-5.148 0-5.146-5.394V49.825a.768.768 0 0 0-.869-.868h-2.789a.767.767 0 0 0-.868.868v29.822a9.063 9.063 0 0 0 2.449 6.758 9.157 9.157 0 0 0 6.727 2.418h6.882a8.386 8.386 0 0 0 9.114-9.176V49.763a.742.742 0 0 0-.868-.806h-2.79a.741.741 0 0 0-.806.868Zm35.154 38.13v-2.232a.768.768 0 0 0-.869-.868h-15.188a.523.523 0 0 1-.621-.555V71.091a.523.523 0 0 1 .621-.558h13.268a.767.767 0 0 0 .867-.868v-2.232a.767.767 0 0 0-.867-.868h-13.268a.523.523 0 0 1-.621-.558V53.483a.523.523 0 0 1 .621-.558h15.189a.767.767 0 0 0 .869-.868v-2.232a.768.768 0 0 0-.869-.868h-19.467a.768.768 0 0 0-.869.868v38.13a.767.767 0 0 0 .869.868h19.467a.767.767 0 0 0 .869-.868Z"
+              style="fill-rule:evenodd;fill:#ff6158"
+            />
+            <path
+              d="M1 22h611v95H1V22Z"
+              style="stroke:#ff5c5f;stroke-width:2px;fill:none;fill-rule:evenodd"
+            />
+            <path
+              d="M207 43h47a4 4 0 0 1 4 4v46a4 4 0 0 1-4 4h-47a4 4 0 0 1-4-4V47a4 4 0 0 1 4-4Z"
+              style="stroke:#5cf6ff;stroke-linecap:round;stroke-width:3.5px;fill:none;fill-rule:evenodd"
+            />
+            <path
+              d="M212 67v4a2.7 2.7 0 0 0 3 3c-.006-.109 31 0 31 0a3.063 3.063 0 0 0 3-3c.051-.224 0-4 0-4h3v7s-.049 2.9-4 3c-.087.006-35 0-35 0s-4.034.613-4-3c.064-.079 0-7 0-7h3Z"
+              style="fill:#5cf6ff;fill-rule:evenodd"
+            />
+            <path
+              d="m10.653.82-3.608 9.837h-.11L3.327.82a.258.258 0 0 0-.264-.19H1.281a.284.284 0 0 0-.308.333v14.612a.283.283 0 0 0 .308.333h.968a.275.275 0 0 0 .286-.333V2.935h.088L6.1 12.273a.368.368 0 0 0 .374.309h1.055a.426.426 0 0 0 .4-.309l3.41-9.314h.088v12.616a.283.283 0 0 0 .308.333h.965a.284.284 0 0 0 .308-.333V.963A.284.284 0 0 0 12.7.63h-1.783a.238.238 0 0 0-.264.19Zm7.216 11.5v-8.1q0-2.067 1.826-2.067h2.244q1.848 0 1.848 2.067v8.1q0 2.067-1.848 2.067H19.7q-1.826 0-1.826-2.067Zm6.655 2.649a3.648 3.648 0 0 0 .869-2.578V4.147a3.649 3.649 0 0 0-.869-2.578A3.093 3.093 0 0 0 22.137.63h-2.618a3.113 3.113 0 0 0-2.387.927 3.639 3.639 0 0 0-.869 2.59v8.245a3.638 3.638 0 0 0 .869 2.59 3.114 3.114 0 0 0 2.387.927h2.618a3.092 3.092 0 0 0 2.387-.94Zm6.611-.8V2.365a.192.192 0 0 1 .22-.214h3.7q1.848 0 1.848 2.067v8.1q0 2.067-1.848 2.067h-3.7a.192.192 0 0 1-.22-.214Zm-1.3 1.735h5.412a3.092 3.092 0 0 0 2.387-.938 3.648 3.648 0 0 0 .869-2.578V4.147a3.648 3.648 0 0 0-.869-2.578A3.093 3.093 0 0 0 35.249.63h-5.412a.284.284 0 0 0-.308.333v14.612a.283.283 0 0 0 .308.333Zm19.888-.333v-.851a.284.284 0 0 0-.308-.333h-5.39a.192.192 0 0 1-.22-.214V9.112a.192.192 0 0 1 .22-.214h4.708a.284.284 0 0 0 .308-.333v-.854a.284.284 0 0 0-.308-.333h-4.706a.192.192 0 0 1-.22-.214v-4.8a.192.192 0 0 1 .22-.214h5.39a.284.284 0 0 0 .308-.333V.963a.284.284 0 0 0-.308-.333h-6.908a.284.284 0 0 0-.309.333v14.612a.283.283 0 0 0 .308.333h6.908a.284.284 0 0 0 .308-.333Zm11.154 0V14.7a.3.3 0 0 0-.308-.356h-5.542a.192.192 0 0 1-.22-.214V.963A.284.284 0 0 0 54.5.63h-.99a.284.284 0 0 0-.31.333v14.612a.283.283 0 0 0 .308.333h7.062a.284.284 0 0 0 .308-.333Zm16.83 0V14.7a.3.3 0 0 0-.307-.36h-5.543a.192.192 0 0 1-.22-.214V.963a.284.284 0 0 0-.308-.333h-.99a.284.284 0 0 0-.308.333v14.612a.283.283 0 0 0 .308.333H77.4a.284.284 0 0 0 .308-.333ZM82.241.63h-.99a.284.284 0 0 0-.308.333v14.612a.283.283 0 0 0 .308.333h.99a.284.284 0 0 0 .308-.333V.963a.284.284 0 0 0-.308-.333Zm5.918 14.945V4.194h.088L94.3 15.6a.6.6 0 0 0 .462.309h.814a.284.284 0 0 0 .308-.333V.963a.284.284 0 0 0-.311-.333h-.968a.284.284 0 0 0-.305.333v11.381h-.091L88.137.82a.349.349 0 0 0-.352-.19h-.9a.284.284 0 0 0-.308.333v14.612a.283.283 0 0 0 .308.333h.968a.284.284 0 0 0 .308-.333Zm19.162 0v-.855a.284.284 0 0 0-.308-.333h-5.39a.192.192 0 0 1-.22-.214V9.112a.192.192 0 0 1 .22-.214h4.708a.284.284 0 0 0 .308-.333v-.854a.284.284 0 0 0-.308-.333h-4.708a.192.192 0 0 1-.22-.214v-4.8a.192.192 0 0 1 .22-.214h5.39a.284.284 0 0 0 .308-.333V.963a.284.284 0 0 0-.308-.333h-6.908a.284.284 0 0 0-.305.333v14.612a.283.283 0 0 0 .308.333h6.908a.284.284 0 0 0 .308-.333ZM156.953 4.1l2.618-1.616v13.091a.284.284 0 0 0 .308.333h.99a.284.284 0 0 0 .308-.333V.963a.284.284 0 0 0-.308-.333h-.924a1.2 1.2 0 0 0-.572.214l-2.552 1.592a.573.573 0 0 0-.264.523v.95q0 .428.4.19Zm8.668 8.292H164.5a.263.263 0 0 0-.286.309v2.875a.275.275 0 0 0 .286.333h1.122a.275.275 0 0 0 .286-.333V12.7a.263.263 0 0 0-.286-.309Zm3.124 3.517h7.568a.284.284 0 0 0 .308-.333V14.7a.284.284 0 0 0-.308-.333h-6.138v-1.096a1.9 1.9 0 0 1 .726-1.5l4.312-3.683a3.782 3.782 0 0 0 1.364-3.018V4.1a3.588 3.588 0 0 0-.858-2.554 3.1 3.1 0 0 0-2.376-.916h-1.76a3.1 3.1 0 0 0-2.376.915 3.588 3.588 0 0 0-.858 2.554v1a.288.288 0 0 0 .286.356h.99a.3.3 0 0 0 .308-.356v-.976q0-2.019 1.848-2.02h1.342a1.731 1.731 0 0 1 1.892 2.02v.855a2.782 2.782 0 0 1-1.1 2.233l-4.246 3.612a3.246 3.246 0 0 0-1.232 2.614v2.138a.284.284 0 0 0 .308.333Zm12.914-3.588v-8.1q0-2.067 1.826-2.067h1.8q1.848 0 1.848 2.067v8.1q0 2.067-1.848 2.067h-1.8q-1.826 0-1.826-2.067Zm6.193 2.661a3.64 3.64 0 0 0 .869-2.59V4.147a3.649 3.649 0 0 0-.869-2.578 3.066 3.066 0 0 0-2.365-.939h-2.2a3.066 3.066 0 0 0-2.365.939 3.649 3.649 0 0 0-.869 2.578v8.245a3.64 3.64 0 0 0 .869 2.59 3.086 3.086 0 0 0 2.365.927h2.2a3.086 3.086 0 0 0 2.365-.928Zm6.567-2.661v-8.1q0-2.067 1.826-2.067h1.8q1.848 0 1.848 2.067v8.1q0 2.067-1.848 2.067h-1.8q-1.826 0-1.826-2.067Zm6.193 2.661a3.64 3.64 0 0 0 .869-2.59V4.147a3.649 3.649 0 0 0-.869-2.578 3.066 3.066 0 0 0-2.365-.939h-2.2a3.066 3.066 0 0 0-2.365.939 3.649 3.649 0 0 0-.869 2.578v8.245a3.64 3.64 0 0 0 .869 2.59 3.086 3.086 0 0 0 2.365.927h2.2a3.086 3.086 0 0 0 2.365-.928Zm4.7-10.882 2.618-1.616v13.091a.284.284 0 0 0 .308.333h.99a.284.284 0 0 0 .308-.333V.963a.284.284 0 0 0-.311-.333h-.925a1.2 1.2 0 0 0-.572.214l-2.552 1.592a.573.573 0 0 0-.264.523v.95q0 .428.4.19Zm9.088 11.475 1.034-3.469h5.324l1.034 3.469a.33.33 0 0 0 .308.333h1.122q.286 0 .2-.333L219.3.963a.4.4 0 0 0-.417-.333H217.3a.4.4 0 0 0-.418.333l-4.114 14.612q-.089.333.2.333h1.1a.358.358 0 0 0 .33-.333Zm3.74-13.163 2.266 8.221h-4.62l2.266-8.221h.088Z"
+              style="fill:#a03932;fill-rule:evenodd"
+            />
+          </svg>
+          <svg
+            id="svgPressed"
+            style="display: none"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 369 117"
+          >
+            <path d="M1 21h367v95H1z" style="fill:#161017;opacity:.59" />
+            <path
+              d="M1 21h367v95H1V21Z"
+              style="fill-rule:evenodd;fill:none;stroke:#ff4a37;stroke-width:2px"
+            />
+            <path
+              d="M39.8 81.967v-12.96a.505.505 0 0 1 .6-.54h9.48q5.52 0 5.52 5.1v3.9q0 5.1-5.16 5.1H40.4a.53.53 0 0 1-.6-.6Zm0-17.7v-12.24a.53.53 0 0 1 .6-.6h9.42q5.1 0 5.1 5.1v3.18q0 5.1-5.28 5.1H40.4a.505.505 0 0 1-.6-.54Zm-3.54 22.02h14.52a8.929 8.929 0 0 0 6.51-2.31 8.592 8.592 0 0 0 2.37-6.45v-4.02a7.02 7.02 0 0 0-1.62-4.83 5.662 5.662 0 0 0-3.9-2.01 6.582 6.582 0 0 0 5.04-6.9v-3.3a8.655 8.655 0 0 0-2.34-6.45 8.826 8.826 0 0 0-6.48-2.31h-14.1a.742.742 0 0 0-.84.84v36.9a.742.742 0 0 0 .84.84Zm36.48-.84v-13.98a.505.505 0 0 1 .6-.54h7.92l6.72 14.52a1.6 1.6 0 0 0 1.5.84h2.7q1.139 0 .6-.96l-6.96-14.58v-.24a7.717 7.717 0 0 0 4.5-2.91 9.082 9.082 0 0 0 1.62-5.55v-5.46a8.738 8.738 0 0 0-2.4-6.51 8.9 8.9 0 0 0-6.54-2.37H69.2a.742.742 0 0 0-.84.84v36.9a.742.742 0 0 0 .84.84h2.7a.742.742 0 0 0 .84-.84Zm0-18.72v-14.64a.505.505 0 0 1 .6-.54h9.06q5.16 0 5.16 5.22v5.34q0 5.161-5.16 5.16h-9.06a.505.505 0 0 1-.6-.54Zm48.36 18.72v-2.16a.743.743 0 0 0-.84-.84h-14.7a.505.505 0 0 1-.6-.54v-12.78a.505.505 0 0 1 .6-.54h12.84a.743.743 0 0 0 .84-.84v-2.16a.743.743 0 0 0-.84-.84h-12.84a.505.505 0 0 1-.6-.54v-12.12a.505.505 0 0 1 .6-.54h14.7a.743.743 0 0 0 .84-.84v-2.16a.743.743 0 0 0-.84-.84h-18.84a.742.742 0 0 0-.84.84v36.9a.742.742 0 0 0 .84.84h18.84a.743.743 0 0 0 .84-.84Zm9.66 0 2.82-8.76h14.52l2.82 8.76a.865.865 0 0 0 .84.84h3.06q.779 0 .54-.84l-11.22-36.9a1.073 1.073 0 0 0-1.14-.84h-4.32a1.072 1.072 0 0 0-1.14.84l-11.22 36.9q-.242.841.54.84h3a.947.947 0 0 0 .9-.84Zm10.2-33.24 6.18 20.76h-12.6l6.18-20.76h.24Zm42.81 31.74a8.78 8.78 0 0 0 2.37-6.54v-2.94a.743.743 0 0 0-.84-.84h-2.7a.742.742 0 0 0-.84.84v2.76q0 5.22-5.04 5.22h-6.18q-4.981 0-4.98-5.22v-20.46q0-5.22 4.98-5.22h6.18q5.04 0 5.04 5.22v2.76a.742.742 0 0 0 .84.84h2.7a.743.743 0 0 0 .84-.84v-2.94a8.16 8.16 0 0 0-8.88-8.88h-7.2a8.16 8.16 0 0 0-8.88 8.88v20.82a8.772 8.772 0 0 0 2.37 6.54 8.86 8.86 0 0 0 6.51 2.34h7.2a8.864 8.864 0 0 0 6.511-2.34Zm14.85 1.5v-16.2a.505.505 0 0 1 .6-.54h14.88a.506.506 0 0 1 .6.54v16.2a.742.742 0 0 0 .84.84h2.7a.743.743 0 0 0 .84-.84v-36.9a.743.743 0 0 0-.84-.84h-2.7a.742.742 0 0 0-.84.84v15.78a.506.506 0 0 1-.6.54h-14.88a.505.505 0 0 1-.6-.54v-15.78a.743.743 0 0 0-.84-.84h-2.7a.742.742 0 0 0-.84.84v36.9a.742.742 0 0 0 .84.84h2.7a.743.743 0 0 0 .84-.84Zm33.78-37.74h-2.7a.742.742 0 0 0-.84.84v36.9a.742.742 0 0 0 .84.84h2.7a.743.743 0 0 0 .84-.84v-36.9a.743.743 0 0 0-.84-.84Zm14.94 37.74v-28.74h.24l16.5 28.8a1.643 1.643 0 0 0 1.26.78h2.22a.743.743 0 0 0 .84-.84v-36.9a.743.743 0 0 0-.84-.84h-2.64a.742.742 0 0 0-.84.84v28.74h-.24l-16.56-29.1a.969.969 0 0 0-.96-.48h-2.46a.742.742 0 0 0-.84.84v36.9a.742.742 0 0 0 .84.84h2.64a.743.743 0 0 0 .84-.84Zm51.78-1.5a8.84 8.84 0 0 0 2.34-6.54v-10.08a1.088 1.088 0 0 0-1.2-1.26h-9.66a.742.742 0 0 0-.84.84v2.22a.717.717 0 0 0 .84.78h5.94a.506.506 0 0 1 .54.6v6.72q0 5.22-4.98 5.22h-5.46q-4.982 0-4.98-5.22v-20.46q0-5.22 4.98-5.22h5.46q4.979 0 4.98 5.22v2.28a.77.77 0 0 0 .84.9h2.7a.77.77 0 0 0 .84-.9v-2.46a8.863 8.863 0 0 0-2.34-6.51 8.7 8.7 0 0 0-6.48-2.37h-6.48a8.16 8.16 0 0 0-8.88 8.88v20.82a8.772 8.772 0 0 0 2.37 6.54 8.86 8.86 0 0 0 6.51 2.34h6.48a8.758 8.758 0 0 0 6.481-2.34Zm15.06-6.54h-3.06a.689.689 0 0 0-.78.78v7.26a.717.717 0 0 0 .78.84h3.06a.717.717 0 0 0 .78-.84v-7.26a.69.69 0 0 0-.78-.78Zm11.64 0h-3.06a.689.689 0 0 0-.78.78v7.26a.717.717 0 0 0 .78.84h3.06a.717.717 0 0 0 .78-.84v-7.26a.69.69 0 0 0-.78-.78Zm11.64 0h-3.06a.689.689 0 0 0-.78.78v7.26a.717.717 0 0 0 .78.84h3.06a.717.717 0 0 0 .78-.84v-7.26a.69.69 0 0 0-.78-.78Z"
+              style="fill:#5cf6ff;fill-rule:evenodd"
+            />
+            <path
+              d="m10.494 1-3.28 8.86h-.1L3.834 1a.234.234 0 0 0-.24-.167h-1.62a.256.256 0 0 0-.28.3v13.161a.256.256 0 0 0 .28.3h.88a.249.249 0 0 0 .26-.3V2.909h.08l3.16 8.41a.334.334 0 0 0 .34.278h.96a.387.387 0 0 0 .36-.278l3.1-8.389h.08v11.364a.256.256 0 0 0 .28.3h.88a.256.256 0 0 0 .28-.3V1.133a.257.257 0 0 0-.28-.3h-1.62a.216.216 0 0 0-.24.171Zm8.16 10.358v-7.3q0-1.862 1.66-1.862h2.04a1.57 1.57 0 0 1 1.68 1.862v7.3a1.57 1.57 0 0 1-1.68 1.862h-2.04q-1.66 0-1.66-1.862Zm6.05 2.386a3.266 3.266 0 0 0 .79-2.322V4a3.267 3.267 0 0 0-.79-2.322 2.825 2.825 0 0 0-2.17-.845h-2.38a2.845 2.845 0 0 0-2.17.835A3.258 3.258 0 0 0 17.194 4v7.426a3.257 3.257 0 0 0 .79 2.333 2.844 2.844 0 0 0 2.17.835h2.38a2.824 2.824 0 0 0 2.166-.846Zm6.81-.717V2.4a.174.174 0 0 1 .2-.193h3.36a1.57 1.57 0 0 1 1.68 1.862v7.3a1.57 1.57 0 0 1-1.68 1.862h-3.36a.174.174 0 0 1-.2-.193Zm-1.18 1.562h4.92a2.824 2.824 0 0 0 2.17-.845 3.266 3.266 0 0 0 .79-2.322V4a3.267 3.267 0 0 0-.79-2.322 2.826 2.826 0 0 0-2.17-.845h-4.92a.257.257 0 0 0-.28.3v13.161a.256.256 0 0 0 .28.3Zm19.28-.3v-.77a.257.257 0 0 0-.28-.3h-4.9a.173.173 0 0 1-.2-.193V8.473a.174.174 0 0 1 .2-.193h4.28a.256.256 0 0 0 .28-.3v-.769a.257.257 0 0 0-.28-.3h-4.28a.174.174 0 0 1-.2-.193V2.4a.174.174 0 0 1 .2-.193h4.9a.256.256 0 0 0 .28-.3v-.774a.256.256 0 0 0-.28-.3h-6.28a.256.256 0 0 0-.28.3v13.161a.256.256 0 0 0 .28.3h6.28a.256.256 0 0 0 .28-.3Zm11.34 0V13.5a.267.267 0 0 0-.28-.321h-5.04a.174.174 0 0 1-.2-.193V1.133a.256.256 0 0 0-.28-.3h-.9a.256.256 0 0 0-.28.3v13.161a.256.256 0 0 0 .28.3h6.42a.256.256 0 0 0 .28-.3Zm17.3 0V13.5a.267.267 0 0 0-.28-.321h-5.04a.174.174 0 0 1-.2-.193V1.133a.257.257 0 0 0-.28-.3h-.9a.257.257 0 0 0-.28.3v13.161a.256.256 0 0 0 .28.3h6.42a.256.256 0 0 0 .28-.3ZM83.174.828h-.9a.256.256 0 0 0-.28.3v13.166a.256.256 0 0 0 .28.3h.9a.256.256 0 0 0 .28-.3V1.133a.256.256 0 0 0-.28-.3Zm6.58 13.461V4.043h.08l5.5 10.272a.544.544 0 0 0 .42.278h.74a.257.257 0 0 0 .28-.3V1.133a.257.257 0 0 0-.28-.3h-.88a.257.257 0 0 0-.28.3v10.251h-.08L89.734 1a.318.318 0 0 0-.32-.171h-.82a.256.256 0 0 0-.28.3v13.165a.256.256 0 0 0 .28.3h.88a.256.256 0 0 0 .28-.3Zm18.62 0v-.77a.257.257 0 0 0-.281-.3h-4.9a.173.173 0 0 1-.2-.193V8.473a.173.173 0 0 1 .2-.193h4.28a.257.257 0 0 0 .28-.3v-.769a.257.257 0 0 0-.28-.3h-4.28a.173.173 0 0 1-.2-.193V2.4a.173.173 0 0 1 .2-.193h4.9a.257.257 0 0 0 .281-.3v-.774a.257.257 0 0 0-.281-.3h-6.279a.256.256 0 0 0-.28.3v13.161a.256.256 0 0 0 .28.3h6.279a.257.257 0 0 0 .281-.3Zm52.56-10.336 2.379-1.453v11.794a.257.257 0 0 0 .281.3h.9a.257.257 0 0 0 .281-.3V1.133a.257.257 0 0 0-.281-.3h-.839a1.093 1.093 0 0 0-.52.193l-2.32 1.434a.515.515 0 0 0-.24.471v.856q0 .385.36.171Zm9.48 7.469h-1.02a.239.239 0 0 0-.261.278v2.589a.249.249 0 0 0 .261.3h1.02a.249.249 0 0 0 .26-.3V11.7a.238.238 0 0 0-.26-.278Zm3.64 3.167h6.879a.257.257 0 0 0 .281-.3V13.5a.257.257 0 0 0-.281-.3h-5.58v-.982a1.706 1.706 0 0 1 .661-1.348l3.92-3.317a3.394 3.394 0 0 0 1.239-2.718v-.877a3.209 3.209 0 0 0-.78-2.3 2.829 2.829 0 0 0-2.159-.824h-1.6a2.836 2.836 0 0 0-2.161.824 3.218 3.218 0 0 0-.78 2.3v.9a.261.261 0 0 0 .261.321h.9a.267.267 0 0 0 .28-.321v-.879a1.549 1.549 0 0 1 1.68-1.819h1.219a1.566 1.566 0 0 1 1.72 1.819v.771a2.5 2.5 0 0 1-1 2.012l-3.86 3.253a2.912 2.912 0 0 0-1.121 2.354v1.926a.257.257 0 0 0 .281.3Zm12.539-3.231v-7.3q0-1.862 1.66-1.862h1.64a1.571 1.571 0 0 1 1.681 1.862v7.3a1.571 1.571 0 0 1-1.681 1.862h-1.64q-1.659 0-1.66-1.862Zm5.631 2.4a3.261 3.261 0 0 0 .79-2.333V4a3.27 3.27 0 0 0-.79-2.322 2.8 2.8 0 0 0-2.151-.845h-2a2.8 2.8 0 0 0-2.15.845A3.265 3.265 0 0 0 185.134 4v7.426a3.257 3.257 0 0 0 .79 2.333 2.817 2.817 0 0 0 2.15.835h2a2.821 2.821 0 0 0 2.15-.835Zm6.37-2.4v-7.3q0-1.862 1.66-1.862h1.64a1.57 1.57 0 0 1 1.68 1.862v7.3a1.57 1.57 0 0 1-1.68 1.862h-1.64q-1.66 0-1.66-1.862Zm5.629 2.4a3.257 3.257 0 0 0 .79-2.333V4a3.265 3.265 0 0 0-.79-2.322 2.8 2.8 0 0 0-2.149-.845h-2a2.8 2.8 0 0 0-2.151.845 3.27 3.27 0 0 0-.79 2.322v7.426a3.261 3.261 0 0 0 .79 2.333 2.821 2.821 0 0 0 2.151.835h2a2.816 2.816 0 0 0 2.149-.835Zm4.671-9.8 2.38-1.455v11.791a.256.256 0 0 0 .28.3h.9a.257.257 0 0 0 .28-.3V1.133a.257.257 0 0 0-.28-.3h-.841a1.093 1.093 0 0 0-.519.193l-2.321 1.434a.516.516 0 0 0-.239.471v.856q0 .385.36.171Zm9.06 10.336.94-3.124h4.839l.94 3.124a.3.3 0 0 0 .281.3h1.02q.26 0 .18-.3l-3.74-13.161a.363.363 0 0 0-.38-.3h-1.441a.361.361 0 0 0-.379.3l-3.74 13.161q-.081.3.179.3h1a.325.325 0 0 0 .3-.3Zm3.4-11.856 2.059 7.4h-4.2l2.06-7.4h.08Z"
+              style="fill:#ab3a35;fill-rule:evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="gallery-container" id="gallery-container">
+      <img id="music" class="music" src="./gallery/mute_music.png">
+      <div class="gallery-wrap">
+      <div class="gallery" id="gallery"></div>
+      <div class="custom-scrollbar" id="customScrollbar" aria-hidden="true">
+        <div class="scrollbar-track">
+          <div class="scrollbar-thumb" id="scrollbarThumb"></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div class="viewer" id="viewer" aria-hidden="true">
+      <div id="controls">
+        <div class="menu" id="menu-a">
+          <div class="side-indicator left-side"></div>
+
+          <div
+            class="menu-item"
+            data-feature-red="./graphics_menu/red_max_settings.svg"
+            data-feature-blue="./graphics_menu/blue_max_settings.svg"
+            data-index="0"
+            aria-selected="false"
+            data-left="0"
+          >
+            <div class="box" aria-hidden="true"></div>
+            <div class="feature feature-1" aria-hidden="true"></div>
+          </div>
+
+          <div
+            class="menu-item"
+            data-feature-red="./graphics_menu/red_ray_tracing.svg"
+            data-feature-blue="./graphics_menu/blue_ray_tracing.svg"
+            data-index="1"
+            aria-selected="true"
+            data-left="1"
+          >
+            <div class="box" aria-hidden="true"></div>
+            <div class="feature feature-2" aria-hidden="true"></div>
+          </div>
+
+          <div
+            class="menu-item"
+            data-feature-red="./graphics_menu/red_path_tracing.svg"
+            data-feature-blue="./graphics_menu/blue_path_tracing.svg"
+            data-index="2"
+            aria-selected="false"
+            data-left="2"
+          >
+            <div class="box" aria-hidden="true"></div>
+            <div class="feature feature-3" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="menu" id="menu-b">
+          <div class="side-indicator right-side"></div>
+
+          <div
+            class="menu-item"
+            data-feature-red="./graphics_menu/red_max_settings.svg"
+            data-feature-blue="./graphics_menu/blue_max_settings.svg"
+            data-index="0"
+            aria-selected="false"
+            data-right="0"
+          >
+            <div class="box" aria-hidden="true"></div>
+            <div class="feature feature-1" aria-hidden="true"></div>
+          </div>
+
+          <div
+            class="menu-item"
+            data-feature-red="./graphics_menu/red_ray_tracing.svg"
+            data-feature-blue="./graphics_menu/blue_ray_tracing.svg"
+            data-index="1"
+            aria-selected="true"
+            data-right="1"
+          >
+            <div class="box" aria-hidden="true"></div>
+            <div class="feature feature-2" aria-hidden="true"></div>
+          </div>
+
+          <div
+            class="menu-item"
+            data-feature-red="./graphics_menu/red_path_tracing.svg"
+            data-feature-blue="./graphics_menu/blue_path_tracing.svg"
+            data-index="2"
+            aria-selected="false"
+            data-right="2"
+          >
+            <div class="box" aria-hidden="true"></div>
+            <div class="feature feature-3" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+
+      <img id="keys" class="keys" src="./graphics_menu/keys_mute.png">
+
+      <div class="stage" id="stage">
+        <div class="image bottom" id="imgLeft" role="img" aria-label="Left"></div>
+        <div class="image top" id="imgRight" role="img" aria-label="Right"></div>
+        <div class="divider" id="divider"></div>
+      </div>
+    </div>
+
+    <audio id="splashSound" src="./sounds/breaching.mp3" preload="auto"></audio>
+    <audio id="menu_sound" src="./sounds/menu.mp3" preload="auto"></audio>
+    <audio id="menu_ost" src="./sounds/menu_ost.mp3" preload="auto"></audio>
+
+  <div id="cursor-shadow-1" class="cursor-shadow">
+    <img class="shadow-img" src="./cursor/cursor.png" alt="" />
+  </div>
+  <div id="cursor-shadow-2" class="cursor-shadow">
+    <img class="shadow-img" src="./cursor/cursor.png" alt="" />
+  </div>
+
+    <script src="images.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="690" height="88" viewBox="0 0 690 88">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #0e0f17;
+        stroke: #328d93;
+        stroke-width: 4px;
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+  <path id="Selected" class="cls-1" d="M2.184,2.345H687.392V64.332L666.451,85.273H2.184V2.345Z"/>
+</svg>

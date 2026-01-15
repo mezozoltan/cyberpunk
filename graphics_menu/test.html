@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Three Rectangle Menu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        background-color: black;
+      }
+
+      .menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        width: 690px;
+        height: 88px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+
+      .box {
+        width: 48px;
+        height: 48px;
+        margin-left: 24px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+
+      .feature {
+        height: 34px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+
+      .feature-1 {
+        width: 201px;
+      }
+      .feature-2 {
+        width: 175px;
+      }
+      .feature-3 {
+        width: 190px;
+      }
+
+      .side-indicator {
+        display: flex;
+        align-items: center;
+        width: 690px;
+        height: 57px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        margin-bottom: 5px;
+      }
+
+      .left-side {
+        background-image: url("./left.svg");
+      }
+
+      .right-side {
+        background-image: url("./right.svg");
+      }
+    </style>
+  </head>
+  <body>
+  <div id="controls">
+    <div class="menu" id="menu-a">
+      <div class="side-indicator left-side"></div>
+
+      <div
+        class="menu-item"
+        data-feature-red="./red_max_settings.svg"
+        data-feature-blue="./blue_max_settings.svg"
+        data-index="0"
+        aria-selected="false"
+      >
+        <div class="box" aria-hidden="true"></div>
+        <div class="feature feature-1" aria-hidden="true"></div>
+      </div>
+
+      <div
+        class="menu-item"
+        data-feature-red="./red_ray_tracing.svg"
+        data-feature-blue="./blue_ray_tracing.svg"
+        data-index="1"
+        aria-selected="true"
+      >
+        <div class="box" aria-hidden="true"></div>
+        <div class="feature feature-2" aria-hidden="true"></div>
+      </div>
+
+      <div
+        class="menu-item"
+        data-feature-red="./red_path_tracing.svg"
+        data-feature-blue="./blue_path_tracing.svg"
+        data-index="2"
+        aria-selected="false"
+      >
+        <div class="box" aria-hidden="true"></div>
+        <div class="feature feature-3" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="menu" id="menu-b">
+      <div class="side-indicator right-side"></div>
+
+      <div
+        class="menu-item"
+        data-feature-red="./red_max_settings.svg"
+        data-feature-blue="./blue_max_settings.svg"
+        data-index="0"
+        aria-selected="false"
+      >
+        <div class="box" aria-hidden="true"></div>
+        <div class="feature feature-1" aria-hidden="true"></div>
+      </div>
+
+      <div
+        class="menu-item"
+        data-feature-red="./red_ray_tracing.svg"
+        data-feature-blue="./blue_ray_tracing.svg"
+        data-index="1"
+        aria-selected="true"
+      >
+        <div class="box" aria-hidden="true"></div>
+        <div class="feature feature-2" aria-hidden="true"></div>
+      </div>
+
+      <div
+        class="menu-item"
+        data-feature-red="./red_path_tracing.svg"
+        data-feature-blue="./blue_path_tracing.svg"
+        data-index="2"
+        aria-selected="false"
+      >
+        <div class="box" aria-hidden="true"></div>
+        <div class="feature feature-3" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
+    <script>
+      const ICONS = {
+        button: {
+          unselected: "./unselected_button.svg",
+          hovered: "./hovered_button.svg",
+          selected: "./selected_button.svg",
+        },
+        box: {
+          unticked: "./unticked_box.svg",
+          hovered: "./hovered_box.svg",
+          ticked: "./ticked_box.svg",
+        },
+      };
+
+      // Initializes one menu container independently
+      function initMenu(containerId, startIndex = 0) {
+        const menu = document.getElementById(containerId);
+        const items = Array.from(menu.querySelectorAll(".menu-item"));
+        let selectedIndex = Math.min(
+          Math.max(startIndex, 0),
+          Math.max(items.length - 1, 0)
+        );
+
+        items.forEach((item, idx) => {
+          const isSelected = idx === selectedIndex;
+          item.setAttribute("aria-selected", String(isSelected));
+          renderItemState(item, { selected: isSelected, hovered: false });
+
+          item.addEventListener("mouseenter", () =>
+            onHoverChange(item, true)
+          );
+          item.addEventListener("mouseleave", () =>
+            onHoverChange(item, false)
+          );
+          item.addEventListener("click", () => onClick(item));
+        });
+
+        function onHoverChange(item, hovered) {
+          const idx = Number(item.dataset.index);
+          const isSelected = idx === selectedIndex;
+          renderItemState(item, { selected: isSelected, hovered });
+        }
+
+        function onClick(item) {
+          const newIndex = Number(item.dataset.index);
+          if (newIndex === selectedIndex) return;
+
+          const prev = items[selectedIndex];
+          prev.setAttribute("aria-selected", "false");
+          renderItemState(prev, { selected: false, hovered: false });
+
+          selectedIndex = newIndex;
+          item.setAttribute("aria-selected", "true");
+          const hovered = item.matches(":hover");
+          renderItemState(item, { selected: true, hovered });
+        }
+
+        function renderItemState(item, { selected, hovered }) {
+          const bg = hovered
+            ? ICONS.button.hovered
+            : selected
+            ? ICONS.button.selected
+            : ICONS.button.unselected;
+          item.style.backgroundImage = `url("${bg}")`;
+
+          const boxEl = item.querySelector(".box");
+          const boxIcon = selected
+            ? ICONS.box.ticked
+            : hovered
+            ? ICONS.box.hovered
+            : ICONS.box.unticked;
+          boxEl.style.backgroundImage = `url("${boxIcon}")`;
+
+          const featureEl = item.querySelector(".feature");
+          const blue = item.dataset.featureBlue;
+          const red = item.dataset.featureRed;
+          const featureIcon = selected || hovered ? blue : red;
+          featureEl.style.backgroundImage = `url("${featureIcon}")`;
+        }
+      }
+
+      // Initialize both menus; second starts selected at index 1
+      initMenu("menu-a", 0);
+      initMenu("menu-b", 1);
+    </script>
+  </body>
+</html>

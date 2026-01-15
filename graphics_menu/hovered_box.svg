@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="57" height="57" viewBox="0 0 57 57">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #0f0f16;
+        stroke: #359196;
+        stroke-width: 4px;
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+  <path id="Hovered" class="cls-1" d="M2.649,2.294H54.584V40.827l-13.4,13.4H2.649V2.294Z"/>
+</svg>

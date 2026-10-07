@@ -1,5 +1,5 @@
 /* Keep the original wide-screen artwork; reflow the interface on smaller screens. */
-.gallery-heading, .viewer-toolbar, .setting-label { display: none; }
+.viewer-toolbar, .setting-label { display: none; }
 button { font: inherit; }
 button:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid var(--accent);
@@ -43,12 +43,9 @@ button:focus-visible, [role="button"]:focus-visible {
     align-items: stretch;
     justify-content: flex-start;
     gap: 16px;
-    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    padding: calc(68px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     background: radial-gradient(ellipse at top, #361116, #110b10 70%);
   }
-  .gallery-heading { display: block; flex: none; padding-right: 110px; }
-  .gallery-heading h1 { margin: 0; color: #ff6158; font-size: clamp(20px, 4vw, 30px); font-weight: 600; }
-  .gallery-heading p { margin: 6px 0 0; color: #cbb9bd; font-size: 13px; }
   .music-toggle {
     top: max(12px, env(safe-area-inset-top));
     right: max(16px, env(safe-area-inset-right));
@@ -82,24 +79,23 @@ button:focus-visible, [role="button"]:focus-visible {
   .thumb { padding: 5%; }
   .custom-scrollbar { display: none; }
   .viewer.show {
-    display: flex;
-    flex-direction: column;
+    display: block;
     box-sizing: border-box;
     height: 100%;
     height: 100dvh;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background: #09090d;
     touch-action: auto;
   }
   .viewer-toolbar {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 6px 12px;
-    flex: none;
-    order: 0;
-    background: #170f16;
+    pointer-events: none;
     z-index: 4;
   }
   .viewer-toolbar button {
@@ -109,51 +105,34 @@ button:focus-visible, [role="button"]:focus-visible {
     background: #211019;
     color: #ff827b;
     touch-action: manipulation;
-  }
-  .viewer-toolbar span { color: #b9c9ce; font-size: 12px; text-align: center; }
-  .stage { position: relative; inset: auto; flex: 1; min-height: 0; order: 1; touch-action: none; }
-  #controls {
-    position: static;
-    flex: none;
-    order: 2;
+    pointer-events: auto;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 10px 12px;
-    background: #170f16;
+    place-items: center;
+  }
+  #sidebarToggle { width: 44px; padding: 8px; }
+  .sidebar-open #sidebarToggle { color: var(--accent); border-color: var(--accent); }
+  .stage { position: absolute; inset: 0; touch-action: none; }
+  .image { background-size: cover; }
+  #controls {
+    top: calc(60px + env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    width: 414px;
+    padding: 8px;
+    background: rgba(9, 9, 13, 0.82);
+    border: 1px solid #6b3039;
+    transform: scale(var(--settings-scale, 0.65));
+    transform-origin: top right;
+    visibility: hidden;
+    pointer-events: none;
     touch-action: manipulation;
   }
-  .viewer.settings-hidden #controls { display: none; }
-  .menu { min-width: 0; margin: 0; gap: 4px; }
-  .side-indicator { width: 100%; height: 22px; margin: 0 0 4px; background-size: 170px auto; }
-  .menu-item {
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 44px;
-    height: auto;
-    gap: 8px;
-    padding: 8px;
-    border: 1px solid #6b3039;
-    background-image: none !important;
-    color: #ff827b;
-  }
-  .menu-item.active { border-color: var(--accent); background-color: #102529; color: var(--accent); }
-  .box { flex: none; width: 20px; height: 20px; margin: 0; }
-  .feature { display: none; }
-  .setting-label { display: inline; font-size: 13px; }
+  .viewer.sidebar-open #controls { visibility: visible; pointer-events: auto; }
   .keys { display: none; }
 }
 @media (max-width: 420px) and (min-height: 501px) {
   .gallery { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-height: 500px) and (min-width: 600px) {
-  .gallery-container { gap: 8px; padding-top: max(8px, env(safe-area-inset-top)); }
-  .gallery-heading p { display: none; }
+  .gallery-container { gap: 8px; }
   .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  #controls { gap: 8px; padding: 6px 12px; }
-  .menu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-  .side-indicator { grid-column: 1 / -1; height: 18px; margin: 0; }
-  .menu-item { gap: 4px; padding: 6px 4px; }
-  .setting-label { font-size: 11px; }
-  .box { width: 16px; height: 16px; }
 }

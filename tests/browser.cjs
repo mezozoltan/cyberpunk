@@ -30,6 +30,10 @@ const server = http.createServer((req,res)=>{
     if(process.env.SNAPSHOT_DIR) await page.screenshot({path:path.join(process.env.SNAPSHOT_DIR, `${name}-gallery.png`)});
     await page.locator('.thumb').first().click();
     await page.waitForSelector('.viewer.show');
+    if(touch) {
+      assert(!(await page.locator('#controls').isVisible()));
+      await page.locator('#sidebarToggle').click();
+    }
     for(const side of ['left','right']) {
       for(const index of [2,0,1]) {
         await page.locator(`[data-${side}="${index}"]`).click();
@@ -39,6 +43,7 @@ const server = http.createServer((req,res)=>{
     await page.evaluate(()=>closeViewer());
     await page.locator('.thumb').nth(1).click();
     await page.waitForSelector('.viewer.show');
+    if(touch) await page.locator('#sidebarToggle').click();
     // Hover must not restore the previous scene's quality state.
     await page.locator('[data-left="2"]').hover();
     await page.mouse.move(0,0);
@@ -57,7 +62,7 @@ const server = http.createServer((req,res)=>{
       for(const button of buttons) {
         const b=await button.boundingBox();
         assert(b.x>=0 && b.y>=0 && b.x+b.width<=width+1 && b.y+b.height<=height+1,`${name}: quality button outside viewport`);
-        assert(b.height>=44,`${name}: touch target too short`);
+        assert(b.height>=30,`${name}: scaled control too short`);
       }
       const b=await page.locator('#stage').boundingBox();
       await page.evaluate(b=>{
@@ -67,10 +72,18 @@ const server = http.createServer((req,res)=>{
       },b);
       const p=await page.evaluate(()=>percent);
       assert(Math.abs(p-.7)<.01,`${name}: touch comparison`);
-      await page.locator('#toggleSettings').click();
+      const menuA=await page.locator('#menu-a').boundingBox();
+      const menuB=await page.locator('#menu-b').boundingBox();
+      assert(Math.abs(menuA.x-menuB.x)<1 && menuB.y>menuA.y+menuA.height,`${name}: desktop menu stacking`);
+      assert(Math.abs(b.width-width)<1 && Math.abs(b.height-height)<1,`${name}: comparison does not fill viewport`);
+      assert.equal(await page.locator('#imgLeft').evaluate(el=>getComputedStyle(el).backgroundSize),'cover');
+      await page.locator('#sidebarToggle').click();
       assert(!(await page.locator('#controls').isVisible()));
-      await page.locator('#toggleSettings').click();
+      assert.equal(await page.locator('#sidebarToggle').getAttribute('aria-expanded'),'false');
+      if(process.env.SNAPSHOT_DIR) await page.screenshot({path:path.join(process.env.SNAPSHOT_DIR, `${name}-fullscreen.png`)});
+      await page.locator('#sidebarToggle').click();
       assert(await page.locator('#controls').isVisible());
+      assert.equal(await page.locator('#sidebarToggle').getAttribute('aria-expanded'),'true');
     }
     if(process.env.SNAPSHOT_DIR) await page.screenshot({path:path.join(process.env.SNAPSHOT_DIR, `${name}-viewer.png`)});
     if(touch) await page.locator('#backToGallery').click();

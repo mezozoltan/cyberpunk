@@ -22,7 +22,8 @@ const thumb = document.getElementById("scrollbarThumb");
 const items = document.getElementsByClassName('menu-item');
 const keys = document.getElementById("keys");
 const musicToggle = document.getElementById("musicToggle");
-const toggleSettings = document.getElementById("toggleSettings");
+const sidebarToggle = document.getElementById("sidebarToggle");
+const compactLayout = window.matchMedia("(max-width: 900px), (max-aspect-ratio: 4/3), (max-height: 500px)");
 let activeCard = null;
 
 let percent = 1/3;
@@ -265,9 +266,7 @@ async function openSet(index) {
   divider.style.display = "";
   document.body.style.cursor = "";
   galleryCon.inert = true;
-  viewerEl.classList.remove("settings-hidden");
-  toggleSettings.textContent = "Hide settings";
-  toggleSettings.setAttribute("aria-expanded", "true");
+  setSidebarOpen(false);
   const focusTarget = window.getComputedStyle(document.querySelector(".viewer-toolbar")).display !== "none"
     ? document.getElementById("backToGallery") : controls.querySelector("[data-left]");
   focusTarget.focus({ preventScroll: true });
@@ -287,11 +286,28 @@ function closeViewer() {
 
 document.getElementById("backToGallery").addEventListener("click", closeViewer);
 musicToggle.addEventListener("click", toggleMusicMute);
-toggleSettings.addEventListener("click", () => {
-  const hidden = viewerEl.classList.toggle("settings-hidden");
-  toggleSettings.textContent = hidden ? "Show settings" : "Hide settings";
-  toggleSettings.setAttribute("aria-expanded", String(!hidden));
-  requestAnimationFrame(applyDivider);
+function updateSidebarLayout() {
+  const compact = compactLayout.matches;
+  const open = viewerEl.classList.contains("sidebar-open");
+  controls.inert = compact && !open;
+  controls.setAttribute("aria-hidden", String(compact && !open));
+  if (compact && viewerEl.classList.contains("show")) {
+    // Scale the original desktop artwork as one unit, keeping its proportions.
+    const availableHeight = viewerEl.clientHeight - controls.offsetTop - 16;
+    const scale = Math.min(0.75, (viewerEl.clientWidth - 64) / controls.offsetWidth, availableHeight / controls.offsetHeight);
+    controls.style.setProperty("--settings-scale", Math.max(0.1, scale));
+  }
+}
+
+function setSidebarOpen(open) {
+  viewerEl.classList.toggle("sidebar-open", open);
+  sidebarToggle.setAttribute("aria-expanded", String(open));
+  sidebarToggle.setAttribute("aria-label", open ? "Close settings sidebar" : "Open settings sidebar");
+  updateSidebarLayout();
+}
+
+sidebarToggle.addEventListener("click", () => {
+  setSidebarOpen(!viewerEl.classList.contains("sidebar-open"));
 });
 
 function setLeftImage(i) {
@@ -416,6 +432,7 @@ window.addEventListener("keydown", onKeyDown);
 window.addEventListener("resize", () => {
   applyDivider();
   updateSplashCtaPosition();
+  updateSidebarLayout();
 });
 new ResizeObserver(applyDivider).observe(stage);
 
@@ -737,6 +754,10 @@ window.addEventListener("mouseup", (e) => {
   }
 
   function toggleHud() {
+    if (compactLayout.matches) {
+      setSidebarOpen(!viewerEl.classList.contains("sidebar-open"));
+      return;
+    }
     const isHidden =
       keys.style.display === "none" &&
       controls.style.display === "none" &&

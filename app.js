@@ -310,6 +310,11 @@ sidebarToggle.addEventListener("click", () => {
   setSidebarOpen(!viewerEl.classList.contains("sidebar-open"));
 });
 
+document.querySelectorAll(".viewer-toolbar button, .music-toggle").forEach((button) => {
+  button.addEventListener("mouseenter", () => setShadowCursorImage(true));
+  button.addEventListener("mouseleave", () => setShadowCursorImage(false));
+});
+
 function setLeftImage(i) {
   if (!currentSet) return;
   leftIndex = i;
@@ -743,7 +748,10 @@ function isEventInsideScrollbar(e) {
 window.addEventListener("mouseup", (e) => {
   galleryCon.style.cursor = 'url("./cursor/cursor.png") 0 0, auto';
 
-  if (!isEventInsideScrollbar(e)) {
+  const toolbarButton = e.target instanceof Element && e.target.closest(".viewer-toolbar button, .music-toggle");
+  if (toolbarButton) {
+    setShadowCursorImage(true);
+  } else if (!isEventInsideScrollbar(e)) {
     setShadowCursorImage(false);
   }
 });

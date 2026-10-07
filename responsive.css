@@ -14,7 +14,7 @@ button:focus-visible, [role="button"]:focus-visible {
   border: 0;
   background: transparent;
   z-index: 2;
-  cursor: pointer;
+  cursor: url("./cursor/cursor_grab.png") 0 0, auto;
 }
 .music-toggle .music { position: static; height: 2vh; display: block; }
 .gallery, .gallery-wrap { max-width: calc(100vw - 160px); }
@@ -99,6 +99,7 @@ button:focus-visible, [role="button"]:focus-visible {
     z-index: 4;
   }
   .viewer-toolbar button {
+    cursor: url("./cursor/cursor_grab.png") 0 0, auto;
     min-height: 44px;
     padding: 8px 12px;
     border: 1px solid #ff6158;
@@ -109,7 +110,7 @@ button:focus-visible, [role="button"]:focus-visible {
     display: grid;
     place-items: center;
   }
-  #sidebarToggle { width: 44px; padding: 8px; }
+  #sidebarToggle, #backToGallery { width: 44px; padding: 8px; }
   .sidebar-open #sidebarToggle { color: var(--accent); border-color: var(--accent); }
   .stage { position: absolute; inset: 0; touch-action: none; }
   .image { background-size: cover; }
@@ -127,6 +128,7 @@ button:focus-visible, [role="button"]:focus-visible {
     touch-action: manipulation;
   }
   .viewer.sidebar-open #controls { visibility: visible; pointer-events: auto; }
+  #controls .menu:last-child { margin-bottom: 0; }
   .keys { display: none; }
 }
 @media (max-width: 420px) and (min-height: 501px) {

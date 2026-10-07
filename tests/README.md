@@ -10,7 +10,7 @@ node tests/browser.cjs
 
 The script serves the site locally and checks phone portrait, small phone,
 phone landscape, tablet, and desktop viewports. It covers entry and gallery
-layout, touch target bounds, comparison dragging, settings visibility, Back,
+layout, scaled sidebar bounds and stacking, full-screen comparison dragging, sidebar toggling, Back,
 music, and matching quality images and selection icons after scene changes.
 It also simulates out-of-order image loads and closing during a pending load.
 

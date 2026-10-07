@@ -478,10 +478,6 @@
     </div>
 
     <div class="gallery-container" id="gallery-container">
-      <header class="gallery-heading">
-        <h1>Cyberpunk RTX Viewer</h1>
-        <p>Choose a scene to compare graphics settings.</p>
-      </header>
       <button id="musicToggle" class="music-toggle" type="button" aria-label="Mute music">
         <img id="music" class="music" src="./gallery/mute_music.png" alt="" />
       </button>
@@ -498,8 +494,11 @@
     <div class="viewer" id="viewer" aria-hidden="true">
       <div class="viewer-toolbar">
         <button id="backToGallery" type="button">Back</button>
-        <span>Drag the image to compare</span>
-        <button id="toggleSettings" type="button" aria-controls="controls" aria-expanded="true">Hide settings</button>
+        <button id="sidebarToggle" type="button" aria-label="Open settings sidebar" aria-controls="controls" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
       <div id="controls">
         <div class="menu" id="menu-a">

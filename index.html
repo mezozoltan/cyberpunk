@@ -409,6 +409,7 @@
       }
 
     </style>
+    <link rel="stylesheet" href="responsive.css" />
   </head>
   <body>
     <div class="splash" id="splash">
@@ -477,7 +478,13 @@
     </div>
 
     <div class="gallery-container" id="gallery-container">
-      <img id="music" class="music" src="./gallery/mute_music.png">
+      <header class="gallery-heading">
+        <h1>Cyberpunk RTX Viewer</h1>
+        <p>Choose a scene to compare graphics settings.</p>
+      </header>
+      <button id="musicToggle" class="music-toggle" type="button" aria-label="Mute music">
+        <img id="music" class="music" src="./gallery/mute_music.png" alt="" />
+      </button>
       <div class="gallery-wrap">
       <div class="gallery" id="gallery"></div>
       <div class="custom-scrollbar" id="customScrollbar" aria-hidden="true">
@@ -489,6 +496,11 @@
     </div>
 
     <div class="viewer" id="viewer" aria-hidden="true">
+      <div class="viewer-toolbar">
+        <button id="backToGallery" type="button">Back</button>
+        <span>Drag the image to compare</span>
+        <button id="toggleSettings" type="button" aria-controls="controls" aria-expanded="true">Hide settings</button>
+      </div>
       <div id="controls">
         <div class="menu" id="menu-a">
           <div class="side-indicator left-side"></div>

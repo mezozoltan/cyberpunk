@@ -21,12 +21,16 @@ const track = bar?.querySelector(".scrollbar-track");
 const thumb = document.getElementById("scrollbarThumb");
 const items = document.getElementsByClassName('menu-item');
 const keys = document.getElementById("keys");
+const musicToggle = document.getElementById("musicToggle");
+const toggleSettings = document.getElementById("toggleSettings");
+let activeCard = null;
 
 let percent = 1/3;
 let isPointerDown = false;
 let leftIndex = 0;
 let rightIndex = 0;
 let currentSet = null;
+let sceneRequest = 0;
 
 function setCookie(name, value, days) {
   const d = new Date();
@@ -55,6 +59,7 @@ const musicImg = document.getElementById("music");
 function applyMusicUiFromMuted() {
   musicImg.src = Menu_Ost.muted ? "./gallery/play_music.png" : "./gallery/mute_music.png";
   keys.src = Menu_Ost.muted ? "./graphics_menu/keys_play.png" : "./graphics_menu/keys_mute.png";
+  musicToggle.setAttribute("aria-label", Menu_Ost.muted ? "Play music" : "Mute music");
 }
 
 const savedMuted = getCookie("musicMuted");
@@ -97,10 +102,16 @@ function requestFullscreen(el) {
     el.webkitRequestFullscreen ||
     el.mozRequestFullScreen ||
     el.msRequestFullscreen;
-  if (fn) fn.call(el);
+  if (fn) {
+    try { Promise.resolve(fn.call(el)).catch(() => {}); } catch (_) {}
+  }
 }
 
 function updateSplashCtaPosition() {
+  if (window.matchMedia("(max-width: 900px), (max-aspect-ratio: 4/3), (max-height: 500px)").matches) {
+    splashBtn.style.bottom = "";
+    return;
+  }
   splashBtn.style.bottom = isFullscreen() ? "16vh" : "12vh";
 }
 
@@ -126,7 +137,6 @@ function wireSplash() {
   function activateSplash() {
     svgDefault.style.display = "none";
     svgPressed.style.display = "block";
-    document.body.style.overflow = "auto";
     Menu_Ost.volume = 0.3;
     try {
       Menu_Ost.play();
@@ -137,7 +147,9 @@ function wireSplash() {
         splashSound.play();
       }
     } catch (_) {}
-    requestFullscreen(document.documentElement);
+    if (window.matchMedia("(pointer: fine) and (min-width: 901px)").matches) {
+      requestFullscreen(document.documentElement);
+    }
     updateSplashCtaPosition();
     showGalleryAfterDelay(2000);
   }
@@ -235,8 +247,11 @@ async function openSet(index) {
   const set = getSetByIndex(index);
   if (!set) return;
 
-  currentSet = set;
+  const request = ++sceneRequest;
   await preload(set.images);
+  if (request !== sceneRequest) return;
+  currentSet = set;
+  activeCard = galleryEl.children[index];
 
   setLeftImage(0);
   setRightImage(1);
@@ -245,15 +260,39 @@ async function openSet(index) {
 
   viewerEl.classList.add("show");
   viewerEl.setAttribute("aria-hidden", "false");
+  keys.style.display = "";
+  controls.style.display = "";
+  divider.style.display = "";
+  document.body.style.cursor = "";
+  galleryCon.inert = true;
+  viewerEl.classList.remove("settings-hidden");
+  toggleSettings.textContent = "Hide settings";
+  toggleSettings.setAttribute("aria-expanded", "true");
+  const focusTarget = window.getComputedStyle(document.querySelector(".viewer-toolbar")).display !== "none"
+    ? document.getElementById("backToGallery") : controls.querySelector("[data-left]");
+  focusTarget.focus({ preventScroll: true });
 
   requestAnimationFrame(applyDivider);
 }
 
 function closeViewer() {
+  sceneRequest++;
   viewerEl.classList.remove("show");
   viewerEl.setAttribute("aria-hidden", "true");
   currentSet = null;
+  isPointerDown = false;
+  galleryCon.inert = false;
+  activeCard?.focus({ preventScroll: true });
 }
+
+document.getElementById("backToGallery").addEventListener("click", closeViewer);
+musicToggle.addEventListener("click", toggleMusicMute);
+toggleSettings.addEventListener("click", () => {
+  const hidden = viewerEl.classList.toggle("settings-hidden");
+  toggleSettings.textContent = hidden ? "Show settings" : "Hide settings";
+  toggleSettings.setAttribute("aria-expanded", String(!hidden));
+  requestAnimationFrame(applyDivider);
+});
 
 function setLeftImage(i) {
   if (!currentSet) return;
@@ -276,6 +315,7 @@ function markActiveButtons(side, index) {
       Number(btn.getAttribute(side === "left" ? "data-left" : "data-right")) === index;
     btn.classList.toggle("active", isActive);
     btn.setAttribute("aria-pressed", String(isActive));
+    renderItemState(btn, { selected: isActive, hovered: btn.matches(":hover") });
   });
 }
 
@@ -284,7 +324,7 @@ function applyDivider() {
   const x = rect.left + percent * rect.width;
   const leftClip = Math.max(0, x - rect.left);
   imgRight.style.clipPath = `inset(0 0 0 ${leftClip}px)`;
-  divider.style.left = `${x}px`;
+  divider.style.left = `${leftClip}px`;
 }
 
 function setPercentFromClientX(clientX) {
@@ -373,7 +413,11 @@ function handleRightClick(e) {
 document.addEventListener('contextmenu', handleRightClick);
 
 window.addEventListener("keydown", onKeyDown);
-window.addEventListener("resize", applyDivider);
+window.addEventListener("resize", () => {
+  applyDivider();
+  updateSplashCtaPosition();
+});
+new ResizeObserver(applyDivider).observe(stage);
 
 function toggleMusicMute() {
   Menu_Ost.muted = !Menu_Ost.muted;
@@ -689,7 +733,7 @@ window.addEventListener("mouseup", (e) => {
 
 (function () {
   function viewerIsVisible() {
-    return window.getComputedStyle(viewer).display === "block";
+    return viewer.classList.contains("show");
   }
 
   function toggleHud() {
@@ -754,50 +798,44 @@ const ICONS = {
   },
 };
 
-// Initializes one menu container independently
+// Menu visuals derive from the same selection as the displayed images.
 function initMenu(containerId, startIndex = 0) {
   const menu = document.getElementById(containerId);
   const items = Array.from(menu.querySelectorAll(".menu-item"));
-  let selectedIndex = Math.min(
-    Math.max(startIndex, 0),
-    Math.max(items.length - 1, 0)
-  );
 
   items.forEach((item, idx) => {
-    const isSelected = idx === selectedIndex;
-    item.setAttribute("aria-selected", String(isSelected));
-    renderItemState(item, { selected: isSelected, hovered: false });
-
+    const label = ["Max settings", "Ray tracing", "Path tracing"][idx];
+    item.setAttribute("role", "button");
+    item.removeAttribute("aria-selected");
+    item.setAttribute("tabindex", "0");
+    item.setAttribute("aria-label", `${containerId === "menu-a" ? "Left" : "Right"}: ${label}`);
+    const labelEl = document.createElement("span");
+    labelEl.className = "setting-label";
+    labelEl.textContent = label;
+    item.appendChild(labelEl);
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        item.click();
+      }
+    });
     item.addEventListener("mouseenter", () =>
       onHoverChange(item, true)
     );
     item.addEventListener("mouseleave", () =>
       onHoverChange(item, false)
     );
-    item.addEventListener("click", () => onClick(item));
   });
+  markActiveButtons(containerId === "menu-a" ? "left" : "right", startIndex);
 
   function onHoverChange(item, hovered) {
-    const idx = Number(item.dataset.index);
-    const isSelected = idx === selectedIndex;
+    const isSelected = item.getAttribute("aria-pressed") === "true";
     renderItemState(item, { selected: isSelected, hovered });
   }
 
-  function onClick(item) {
-    const newIndex = Number(item.dataset.index);
-    if (newIndex === selectedIndex) return;
+}
 
-    const prev = items[selectedIndex];
-    prev.setAttribute("aria-selected", "false");
-    renderItemState(prev, { selected: false, hovered: false });
-
-    selectedIndex = newIndex;
-    item.setAttribute("aria-selected", "true");
-    const hovered = item.matches(":hover");
-    renderItemState(item, { selected: true, hovered });
-  }
-
-  function renderItemState(item, { selected, hovered }) {
+function renderItemState(item, { selected, hovered }) {
     const bg = hovered
       ? ICONS.button.hovered
       : selected
@@ -819,7 +857,6 @@ function initMenu(containerId, startIndex = 0) {
     const featureIcon = selected || hovered ? blue : red;
     featureEl.style.backgroundImage = `url("${featureIcon}")`;
   }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".thumb").forEach((indexes) => {
